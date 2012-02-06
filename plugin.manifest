@@ -1,0 +1,6 @@
+pluginname=OAuthConsumerExample
+pluginclassname=OAuthConsumerExample
+origin=UOL
+version=0.1
+homepage=http://github.com/tleilax/studip-mobile-webservices
+studipMinVersion=2.0
