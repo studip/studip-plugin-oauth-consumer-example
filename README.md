@@ -7,8 +7,6 @@ resource which is behind OAuth.
 
 ## Test client
 
-The test client is also implemented in the plugin.
-
 Although the library used for the server side implementation could also manage the client communication, a different library was chosen on purpose to ensure compatibility.
 
 ## Credits

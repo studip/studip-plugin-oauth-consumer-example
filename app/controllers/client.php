@@ -14,7 +14,7 @@ class ClientController extends StudipController
         parent::before_filter($action, $args);
 
         $this->set_layout($GLOBALS['template_factory']->open('layouts/base'));
-        Navigation::activateItem('/oauth');
+        Navigation::activateItem('/oauth_consumer');
         PageLayout::setTitle(_('OAuth Client'));
 
         # make container even more accessible
@@ -37,7 +37,7 @@ class ClientController extends StudipController
 
         $clear_cache = sprintf('<a href="%s">%s</a>',
                                $this->url_for('client/clear_cache'), _('Cache leeren'));
-        $this->setInfoboxImage('infobox/administration.jpg');
+        $this->setInfoboxImage('infobox/administration.png');
         $this->addToInfobox('Aktionen', $clear_cache, 'icons/16/black/refresh.png');
     }
 
@@ -137,6 +137,7 @@ class ClientController extends StudipController
             }
         } elseif ($format === 'json') {
             $result = json_decode($result, true);
+            $result = array_map_recursive('studip_utf8decode', $result);
         } elseif ($format === 'php') {
             $result = unserialize($result);
         } elseif ($format === 'xml') {

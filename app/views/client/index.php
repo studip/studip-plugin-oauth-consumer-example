@@ -5,9 +5,7 @@
 <? if (isset($result)): ?>
     <h2><?= _('Zurückgeliefertes Ergebnis') ?></h2>
     <p>MD5: <?= md5(serialize($result)) ?></p>
-    <pre style="border: 1px solid #888; background: #ccc; padding: .5em; overflow-x: auto">
-        <?= htmlReady(is_array($result) ? print_r($result, true) : $result) ?>
-    </pre>
+    <pre style="border: 1px solid #888; background: #ccc; padding: .5em; overflow-x: auto"><?= htmlReady(is_array($result) ? var_dump($result) : $result) ?></pre>
 <? endif; ?>
 
 <form class="settings" action="<?= $controller->url_for('client') ?>" method="get">
