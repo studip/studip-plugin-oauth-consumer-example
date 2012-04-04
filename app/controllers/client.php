@@ -36,7 +36,7 @@ class ClientController extends StudipController
         }
 
         $clear_cache = sprintf('<a href="%s">%s</a>',
-                               $this->url_for('client/clear_cache'), _('Cache leeren'));
+                               $this->url_for('client/clear_cache'), _('Token löschen'));
         $this->setInfoboxImage('infobox/administration.png');
         $this->addToInfobox('Aktionen', $clear_cache, 'icons/16/black/refresh.png');
     }
@@ -48,7 +48,8 @@ class ClientController extends StudipController
         $cache = StudipCacheFactory::getCache();
         $cache->expire(self::ACCESS_TOKEN . $GLOBALS['user']->id);
         $cache->expire(self::REQUEST_TOKEN . $GLOBALS['user']->id);
-        PageLayout::postMessage(MessageBox::success(_('Der Cache wurde geleert.')));
+
+        PageLayout::postMessage(MessageBox::success(_('Das OAuth-Token wurde gelöscht.')));
         $this->redirect('client');
     }
 
