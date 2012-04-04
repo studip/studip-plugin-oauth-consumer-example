@@ -125,18 +125,7 @@ class ClientController extends StudipController
     }
 
     private function consumeResult($result, $format) {
-        if ($format === 'csv') {
-            $temp = explode("\n", $result);
-            $temp = array_filter($temp);
-            $rows = array_map(function ($row) { return str_getcsv($row, ';'); }, $temp);
-
-            $header = array_shift($rows);
-            $result = array();
-            foreach ($rows as $row) {
-                $index = reset($row);
-                $result[$index] = array_combine($header, $row);
-            }
-        } elseif ($format === 'json') {
+        if ($format === 'json') {
             $result = json_decode($result, true);
             $result = array_map_recursive('studip_utf8decode', $result);
         } elseif ($format === 'php') {
