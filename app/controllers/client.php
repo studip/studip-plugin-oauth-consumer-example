@@ -22,6 +22,12 @@ class ClientController extends StudipController
     }
 
     function index_action() {
+        $parameters = Request::getArray('parameters');
+        if (!empty($parameters) and !empty($parameters['name']) and !empty($parameters['value'])) {
+            $parameters = array_combine($parameters['name'], $parameters['value']);
+            $parameters = array_filter($parameters);
+        }
+
         $resource = Request::get('resource');
         if ($resource) {
             try {
@@ -34,6 +40,11 @@ class ClientController extends StudipController
                 PageLayout::postMessage($message);
             }
         }
+        
+        if (empty($parameters)) {
+            $parameters = array('' => '');
+        }
+        $this->parameters = $parameters;
 
         $clear_cache = sprintf('<a href="%s">%s</a>',
                                $this->url_for('client/clear_cache'), _('Token löschen'));
@@ -62,6 +73,9 @@ class ClientController extends StudipController
 
         if ($client) {
             $uri  = $this->container['API_URL'] . "/$resource.$format";
+            if (!empty($parameters)) {
+                $uri .= '?' . http_build_query($parameters);
+            }
             $client->setUri($uri);
             $client->setMethod($method);
             $response = $client->send();

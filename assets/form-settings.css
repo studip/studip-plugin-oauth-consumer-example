@@ -1,5 +1,7 @@
 form.settings input[type=text], form.settings select, form.settings textarea {
   width: 97.5%; }
+  form.settings input[type=text].small, form.settings select.small, form.settings textarea.small {
+    width: 40%; }
 form.settings fieldset {
   border: 0;
   margin: 0 0 1em;
@@ -38,8 +40,7 @@ form.settings fieldset {
       text-align: right;
       top: 0; }
       form.settings fieldset > div label small {
-        color: #444444;
-        display: none; }
+        color: #444444; }
 form.settings .type-button {
   text-align: center; }
 form.settings.horizontal fieldset {

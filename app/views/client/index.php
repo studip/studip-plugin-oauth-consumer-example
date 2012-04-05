@@ -1,4 +1,4 @@
-<? use Studip\Button, Studip\LinkButton; ?>
+<style>#parameters img { cursor: pointer; }</style>
 
 <h1><?= _('Testclient für OAuth') ?></h1>
 
@@ -38,6 +38,23 @@
             <? endforeach; ?>
             </select>
         </div>
+        
+        <div id="parameters" class="type-text" style="display:none;">
+            <label>
+                <?= _('Parameter') ?>
+                <?= Assets::img('icons/16/blue/plus', array('class' => 'text-top')) ?>
+            </label>
+            <ul style="list-style:none;margin:0;padding:0;">
+            <? foreach ($parameters as $key => $value): ?>
+                <li>
+                    <input class="small" type="text" name="parameters[name][]" value="<?= htmlReady($key) ?>" placeholder="<?= _('Name') ?>">
+                    =
+                    <input class="small" type="text" name="parameters[value][]" value="<?= htmlReady($value) ?>" placeholder="<?= _('Wert') ?>">
+                    <?= Assets::img('icons/16/blue/minus', array('class' => 'text-top')) ?>
+                </li>
+            <? endforeach; ?>
+            </ul>
+        </div>
 
         <div class="type-checkbox">
             <label for="consume"><?= _('Rückgabe umwandeln') ?></label>
@@ -46,12 +63,29 @@
     </fieldset>
 
     <div class="type-button">
-        <?= Button::createAccept('absenden', 'submit') ?>
+        <?= Studip\Button::createAccept('absenden', 'submit') ?>
     </div>
 </form>
 
 <? if (isset($result)): ?>
     <h2><?= _('Zurückgeliefertes Ergebnis') ?></h2>
-    <p>MD5: <?= md5(serialize($result)) ?></p>
     <pre style="border: 1px solid #888; background: #ccc; padding: .5em; height: 20em; overflow: auto"><?= htmlReady(is_array($result) ? var_dump($result) : $result) ?></pre>
 <? endif; ?>
+
+<script>
+jQuery(function ($) {
+    $('#parameters')
+        .show()
+        .delegate('label img', 'click', function () {
+            $('#parameters ul li:first').clone().find('input').val('').end().appendTo('#parameters ul');
+        })
+        .delegate('ul img', 'click', function () {
+            var li = $(this).closest('li');
+            if (li.siblings().length) {
+                li.remove();
+            } else {
+                li.find('input').val('');
+            }
+        });
+});
+</script>
