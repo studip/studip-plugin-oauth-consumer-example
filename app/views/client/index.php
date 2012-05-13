@@ -31,7 +31,7 @@
         <div class="type-select">
             <label for="format"><?= _('Format') ?></label>
             <select id="format" name="format">
-            <? foreach (words('json php xml') as $format): ?>
+            <? foreach (words('json xml') as $format): ?>
                 <option value="<?= $format ?>" <?= Request::option('format', 'json') === $format ? 'selected' : '' ?>>
                     <?= $format ?>
                 </option>

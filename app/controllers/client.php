@@ -31,7 +31,7 @@ class ClientController extends StudipController
         $resource = Request::get('resource');
         if ($resource) {
             try {
-                $this->result = $this->request($resource, Request::option('format'),
+                $this->result = $this->request($resource, $parameters, Request::option('format'),
                                                Request::option('method'), Request::int('signed'),
                                                !Request::int('consume'));
             } catch (Exception $e) {
@@ -64,7 +64,7 @@ class ClientController extends StudipController
         $this->redirect('client');
     }
 
-    private function request($resource, $format = 'php', $method = 'GET', $signed = false, $raw = false) {
+    private function request($resource, $parameters = array(), $format = 'php', $method = 'GET', $signed = false, $raw = false) {
         if ($signed) {
             $client = $this->signed();
         } else {
@@ -73,16 +73,21 @@ class ClientController extends StudipController
 
         if ($client) {
             $uri  = $this->container['API_URL'] . "/$resource.$format";
-            if (!empty($parameters)) {
-                $uri .= '?' . http_build_query($parameters);
+            if (false and !empty($parameters)) {
+                if ($method === 'GET') {
+                    $client->setParameterGet($parameters);
+                } else if ($method === 'POST') {
+                    $client->setParameterPost($parameters);
+                }
             }
             $client->setUri($uri);
             $client->setMethod($method);
+//            $client->prepareOauth();
             $response = $client->send();
 
             if ($raw or $response->isClientError()) {
-                $result = sprintf("URL: %s\nStatus: %u %s\n%s\n%s",
-                                  $client->getUri(),
+                $result = sprintf("URL: %s?%s\nStatus: %u %s\n%s\n%s",
+                                  $client->getUri(), $client->getRequest()->query()->toString(),
                                   $response->getStatusCode(), $response->getReasonPhrase(),
                                   $response->headers()->toString(), $response->getBody());
             } else {
@@ -142,66 +147,10 @@ class ClientController extends StudipController
         if ($format === 'json') {
             $result = json_decode($result, true);
             $result = array_map_recursive('studip_utf8decode', $result);
-        } elseif ($format === 'php') {
-            $result = unserialize($result);
         } elseif ($format === 'xml') {
             $result = json_decode(json_encode(simplexml_load_string($result)), true);
         }
 
         return $result;
-    }
-
-    /**
-     * Spawns a new infobox variable on this object, if neccessary.
-     **/
-    private function populateInfobox()
-    {
-        if (!isset($this->infobox)) {
-            $this->infobox = array(
-                'picture' => 'blank.gif',
-                'content' => array()
-            );
-        }
-    }
-
-    /**
-     * Sets the header image for the infobox.
-     *
-     * @param String $image Image to display, path is relative to :assets:/images
-     **/
-    function setInfoBoxImage($image)
-    {
-        $this->populateInfobox();
-
-        $this->infobox['picture'] = $image;
-    }
-
-    /**
-     * Adds an item to a certain category section of the infobox. Categories
-     * are created in the order this method is invoked. Multiple occurences of
-     * a category will add items to the category.
-     *
-     * @param String $category The item's category title used as the header
-     * above displayed category - write spoken not
-     * tech language ^^
-     * @param String $text The content of the item, may contain html
-     * @param String $icon Icon to display in front the item, path is
-     * relative to :assets:/images
-     **/
-    function addToInfobox($category, $text, $icon = 'blank.gif')
-    {
-        $this->populateInfobox();
-
-        $infobox = $this->infobox;
-
-        if (!isset($infobox['content'][$category])) {
-            $infobox['content'][$category] = array(
-                'kategorie' => $category,
-                'eintrag' => array(),
-            );
-        }
-        $infobox['content'][$category]['eintrag'][] = compact('icon', 'text');
-
-        $this->infobox = $infobox;
     }
 }
