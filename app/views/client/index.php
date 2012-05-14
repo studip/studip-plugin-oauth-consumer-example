@@ -9,7 +9,7 @@
         <div class="type-text">
             <label for="resource"><?= _('Angeforderte Resource') ?></label>
             <input required type="text" id="resource" name="resource"
-                   value="<?= htmlReady(Request::get('resource', 'news/studip')) ?>">
+                   value="<?= htmlReady(Request::get('resource', 'news/range/studip')) ?>">
         </div>
 
         <div class="type-select">
@@ -25,7 +25,7 @@
 
         <div class="type-checkbox">
             <label for="signed"><?= _('Signiert') ?></label>
-            <input type="checkbox" id="signed" name="signed" value="1" <?= Request::int('signed') ? 'checked' : ''?>>
+            <input type="checkbox" id="signed" name="signed" value="1" <?= Request::int('signed', 1) ? 'checked' : ''?>>
         </div>
 
         <div class="type-select">
