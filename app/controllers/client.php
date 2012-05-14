@@ -11,9 +11,6 @@ spl_autoload_register(function ($name) {
 
 class ClientController extends StudipController
 {
-    const REQUEST_TOKEN = '/oauth/request_token/';
-    const ACCESS_TOKEN = '/oauth/access_token/';
-    
     const CACHE_KEY_REQUEST_TOKEN = '/oauth/request_token/';
     const CONFIG_KEY_ACCESS_TOKEN = 'OAUTH_CLIENT_ACCESS_TOKEN';
 
@@ -67,7 +64,7 @@ class ClientController extends StudipController
     function clear_cache_action()
     {
         $this->config->unsetValue(self::CONFIG_KEY_ACCESS_TOKEN);
-        $this->cache->expire(self::REQUEST_TOKEN . $GLOBALS['user']->id);
+        $this->cache->expire(self::CACHE_KEY_REQUEST_TOKEN . $GLOBALS['user']->id);
 
         PageLayout::postMessage(MessageBox::success(_('Das OAuth-Token wurde gelöscht.')));
         $this->redirect('client');
@@ -124,10 +121,10 @@ class ClientController extends StudipController
         $access_token = $this->config[self::CONFIG_KEY_ACCESS_TOKEN];
 
         if (!$access_token) {
-            $request_token = $cache->read(self::REQUEST_TOKEN . $GLOBALS['user']->id);
+            $request_token = $cache->read(self::CACHE_KEY_REQUEST_TOKEN . $GLOBALS['user']->id);
             if (!$request_token) {
                 $token = $consumer->getRequestToken();
-                $cache->write(self::REQUEST_TOKEN . $GLOBALS['user']->id, serialize($token));
+                $cache->write(self::CACHE_KEY_REQUEST_TOKEN . $GLOBALS['user']->id, serialize($token));
                 $consumer->redirect();
             } else {
                 try {
@@ -140,7 +137,7 @@ class ClientController extends StudipController
                 } catch (Exception $e) {
                     PageLayout::postMessage(MessageBox::error(_('Zugriff verweigert.')));
                 }
-                $cache->expire(self::REQUEST_TOKEN . $GLOBALS['user']->id);
+                $cache->expire(self::CACHE_KEY_REQUEST_TOKEN . $GLOBALS['user']->id);
             }
         }
 
