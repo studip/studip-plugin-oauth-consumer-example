@@ -11,4 +11,4 @@ Although the library used for the server side implementation could also manage t
 
 ## Credits
 
-- OAuth client uses the [OAuth library](https://github.com/zendframework/zf2/tree/master/library/Zend/OAuth) from the [Zend Framework 2.0](http://framework.zend.com/zf2)
+- OAuth client uses the [OAuth library](http://framework.zend.com/manual/en/zend.oauth.introduction.html) from the [Zend Framework 1.11](http://framework.zend.com/)

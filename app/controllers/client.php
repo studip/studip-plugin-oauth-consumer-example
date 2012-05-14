@@ -1,10 +1,10 @@
 <?php
+set_include_path(get_include_path() . PATH_SEPARATOR . realpath(dirname(__FILE__) . '/../../vendor'));
 spl_autoload_register(function ($name) {
-    $file = str_replace('\\', '/', $name);
-    $file = str_replace('Zend/', '', $file);
-    $file = '/vendor/zf2/' . $file . '.php';
+    $file = str_replace(array('\\', '_'), '/', $name);
+    $file = '/vendor/' . $file . '.php';
     $path = realpath(dirname(__FILE__).'/../..');
-    @include $path . $file;
+    include_once $path . $file;
 }, false, true);
 
 class ClientController extends StudipController
@@ -68,12 +68,12 @@ class ClientController extends StudipController
         if ($signed) {
             $client = $this->signed();
         } else {
-            $client = new \Zend\Http\Client;
+            $client = new Zend_Http_Client;
         }
 
         if ($client) {
             $uri  = $this->container['API_URL'] . "/$resource.$format";
-            if (false and !empty($parameters)) {
+            if (!empty($parameters)) {
                 if ($method === 'GET') {
                     $client->setParameterGet($parameters);
                 } else if ($method === 'POST') {
@@ -81,20 +81,19 @@ class ClientController extends StudipController
                 }
             }
             $client->setUri($uri);
-            $client->setMethod($method);
-//            $client->prepareOauth();
-            $response = $client->send();
+            $client->setMethod($method === 'POST' ? Zend_Http_Client::POST : Zend_Http_Client::GET);
+            $response = $client->request();
 
-            if ($raw or $response->isClientError()) {
-                $result = sprintf("URL: %s?%s\nStatus: %u %s\n%s\n%s",
-                                  $client->getUri(), $client->getRequest()->query()->toString(),
-                                  $response->getStatusCode(), $response->getReasonPhrase(),
-                                  $response->headers()->toString(), $response->getBody());
+            if ($raw or $response->isError()) {
+                $result = sprintf("URL: %s\nStatus: %u %s\n%s\n%s",
+                                  $client->getUri(true),
+                                  $response->getStatus(), $response->getMessage(),
+                                  $response->getHeadersAsString(), $response->getBody());
             } else {
                 $result = $this->consumeResult($response->getBody(), $format);
             }
-            if ($response->isClientError()) {
-                throw new Exception($result, $response->getStatusCode());
+            if ($response->isError()) {
+                throw new Exception($result, $response->getStatus());
             }
             return $result;
         }
@@ -109,7 +108,7 @@ class ClientController extends StudipController
             'consumerKey'    => $this->container['CONSUMER_KEY'],
             'consumerSecret' => $this->container['CONSUMER_SECRET'],
         );
-        $consumer = new \Zend\OAuth\Consumer($options);
+        $consumer = new Zend_Oauth_Consumer($options);
 
 
         $cache = StudipCacheFactory::getCache();
