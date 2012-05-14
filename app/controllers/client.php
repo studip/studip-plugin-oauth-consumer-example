@@ -1,4 +1,6 @@
 <?php
+require_once 'lib/classes/UserConfig.class.php';
+
 set_include_path(get_include_path() . PATH_SEPARATOR . realpath(dirname(__FILE__) . '/../../vendor'));
 spl_autoload_register(function ($name) {
     $file = str_replace(array('\\', '_'), '/', $name);
@@ -9,8 +11,14 @@ spl_autoload_register(function ($name) {
 
 class ClientController extends StudipController
 {
+    const REQUEST_TOKEN = '/oauth/request_token/';
+    const ACCESS_TOKEN = '/oauth/access_token/';
+    
+    const CACHE_KEY_REQUEST_TOKEN = '/oauth/request_token/';
+    const CONFIG_KEY_ACCESS_TOKEN = 'OAUTH_CLIENT_ACCESS_TOKEN';
 
-    function before_filter(&$action, &$args) {
+    function before_filter(&$action, &$args)
+    {
         parent::before_filter($action, $args);
 
         $this->set_layout($GLOBALS['template_factory']->open('layouts/base'));
@@ -19,9 +27,13 @@ class ClientController extends StudipController
 
         # make container even more accessible
         $this->container = $this->dispatcher->container;
+        
+        $this->config = UserConfig::get($GLOBALS['user']->id);
+        $this->cache  = StudipCacheFactory::getCache();
     }
 
-    function index_action() {
+    function index_action()
+    {
         $parameters = Request::getArray('parameters');
         if (!empty($parameters) and !empty($parameters['name']) and !empty($parameters['value'])) {
             $parameters = array_combine($parameters['name'], $parameters['value']);
@@ -52,19 +64,17 @@ class ClientController extends StudipController
         $this->addToInfobox('Aktionen', $clear_cache, 'icons/16/black/refresh.png');
     }
 
-    const REQUEST_TOKEN = '/oauth/request_token/';
-    const ACCESS_TOKEN = '/oauth/access_token/';
-
-    function clear_cache_action() {
-        $cache = StudipCacheFactory::getCache();
-        $cache->expire(self::ACCESS_TOKEN . $GLOBALS['user']->id);
-        $cache->expire(self::REQUEST_TOKEN . $GLOBALS['user']->id);
+    function clear_cache_action()
+    {
+        $this->config->unsetValue(self::CONFIG_KEY_ACCESS_TOKEN);
+        $this->cache->expire(self::REQUEST_TOKEN . $GLOBALS['user']->id);
 
         PageLayout::postMessage(MessageBox::success(_('Das OAuth-Token wurde gelöscht.')));
         $this->redirect('client');
     }
 
-    private function request($resource, $parameters = array(), $format = 'php', $method = 'GET', $signed = false, $raw = false) {
+    private function request($resource, $parameters = array(), $format = 'php', $method = 'GET', $signed = false, $raw = false)
+    {
         if ($signed) {
             $client = $this->signed();
         } else {
@@ -110,9 +120,8 @@ class ClientController extends StudipController
         );
         $consumer = new Zend_Oauth_Consumer($options);
 
-
         $cache = StudipCacheFactory::getCache();
-        $access_token = $cache->read(self::ACCESS_TOKEN . $GLOBALS['user']->id);
+        $access_token = $this->config[self::CONFIG_KEY_ACCESS_TOKEN];
 
         if (!$access_token) {
             $request_token = $cache->read(self::REQUEST_TOKEN . $GLOBALS['user']->id);
@@ -122,15 +131,16 @@ class ClientController extends StudipController
                 $consumer->redirect();
             } else {
                 try {
-                    $token = $consumer->getAccessToken($_GET, unserialize($request_token));
+                    $token = @$consumer->getAccessToken($_GET, unserialize($request_token));
+
                     $access_token = serialize($token);
-                    $cache->write(self::ACCESS_TOKEN . $GLOBALS['user']->id, $access_token);
-                    $cache->expire(self::REQUEST_TOKEN . $GLOBALS['user']->id);
+                    $this->config->store(self::CONFIG_KEY_ACCESS_TOKEN, $access_token);
+
                     PageLayout::postMessage(MessageBox::success(_('Zugriff erlaubt.')));
                 } catch (Exception $e) {
-                    $cache->expire(self::REQUEST_TOKEN . $GLOBALS['user']->id);
                     PageLayout::postMessage(MessageBox::error(_('Zugriff verweigert.')));
                 }
+                $cache->expire(self::REQUEST_TOKEN . $GLOBALS['user']->id);
             }
         }
 
@@ -142,7 +152,8 @@ class ClientController extends StudipController
         return $client;
     }
 
-    private function consumeResult($result, $format) {
+    private function consumeResult($result, $format)
+    {
         if ($format === 'json') {
             $result = json_decode($result, true);
             $result = array_map_recursive('studip_utf8decode', $result);
