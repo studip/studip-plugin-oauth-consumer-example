@@ -8,8 +8,8 @@
 
         <div class="type-text">
             <label for="resource"><?= _('Angeforderte Resource') ?></label>
-            <input required type="text" id="resource" name="resource"
-                   value="<?= htmlReady(Request::get('resource', 'news/range/studip')) ?>">
+            <input type="text" id="resource" name="resource"
+                   value="<?= htmlReady(Request::get('resource', 'discovery')) ?>">
         </div>
 
         <div class="type-select">
@@ -49,8 +49,13 @@
                 <li>
                     <input class="small" type="text" name="parameters[name][]" value="<?= htmlReady($key) ?>" placeholder="<?= _('Name') ?>">
                     =
+                <? if (strpos($value, "\n") !== false): ?>
+                    <textarea name="parameters[value][]" class="small"><?= htmlReady($value) ?></textarea>
+                <? else: ?>
                     <input class="small" type="text" name="parameters[value][]" value="<?= htmlReady($value) ?>" placeholder="<?= _('Wert') ?>">
-                    <?= Assets::img('icons/16/blue/minus', array('class' => 'text-top')) ?>
+                <? endif; ?>
+                    <?= Assets::img('icons/16/blue/guestbook', array('class' => 'text-top')) ?>
+                    <?= Assets::img('icons/16/blue/trash', array('class' => 'text-top')) ?>
                 </li>
             <? endforeach; ?>
             </ul>
@@ -77,15 +82,25 @@ jQuery(function ($) {
     $('#parameters')
         .show()
         .delegate('label img', 'click', function () {
-            $('#parameters ul li:first').clone().find('input').val('').end().appendTo('#parameters ul');
+            $('#parameters ul li:last').clone().find('input').val('').text('').end().appendTo('#parameters ul');
         })
-        .delegate('ul img', 'click', function () {
+        .delegate('ul img[src*=trash]', 'click', function () {
             var li = $(this).closest('li');
             if (li.siblings().length) {
                 li.remove();
             } else {
                 li.find('input').val('');
             }
+        })
+        .delegate('ul img[src*=guestbook]', 'click', function () {
+            var prev = $(this).prev(),
+                replacement;
+            if (prev.is('input')) {
+                replacement = $('<textarea class="small"/>').attr('name', prev.attr('name')).text(prev.val());
+            } else {
+                replacement = $('<input type="text" placeholder="<?= _('Wert') ?>" class="small"/>').attr('name', prev.attr('name')).val(prev.text())
+            }
+            prev.replaceWith(replacement);
         });
 });
 </script>

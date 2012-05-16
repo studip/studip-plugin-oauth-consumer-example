@@ -1,4 +1,8 @@
 form.settings input[type=text], form.settings select, form.settings textarea {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  vertical-align: top;
   width: 97.5%; }
   form.settings input[type=text].small, form.settings select.small, form.settings textarea.small {
     width: 40%; }
