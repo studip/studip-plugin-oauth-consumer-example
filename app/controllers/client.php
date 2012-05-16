@@ -70,7 +70,7 @@ class ClientController extends StudipController
         $this->redirect('client');
     }
 
-    private function request($resource, $parameters = array(), $format = 'php', $method = 'GET', $signed = false, $raw = false)
+    private function request($resource, $parameters = array(), $format = 'json', $method = 'GET', $signed = false, $raw = false)
     {
         if ($signed) {
             $client = $this->signed();
@@ -87,8 +87,9 @@ class ClientController extends StudipController
                     $client->setParameterPost($parameters);
                 }
             }
+            $client->setHeaders('Content-Type', 'application/json');
             $client->setUri($uri);
-            $client->setMethod($method === 'POST' ? Zend_Http_Client::POST : Zend_Http_Client::GET);
+            $client->setMethod($method);
             $response = $client->request();
 
             if ($raw or $response->isError()) {
