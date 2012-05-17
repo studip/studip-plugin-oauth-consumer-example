@@ -29,11 +29,11 @@
         </div>
 
         <div class="type-select">
-            <label for="format"><?= _('Format') ?></label>
-            <select id="format" name="format">
-            <? foreach (words('json xml') as $format): ?>
-                <option value="<?= $format ?>" <?= Request::option('format', 'json') === $format ? 'selected' : '' ?>>
-                    <?= $format ?>
+            <label for="content_type">Content-Type</label>
+            <select id="content_type" name="content_type">
+            <? foreach ($controller->content_types as $content_type): ?>
+                <option <?= Request::get('content_type', 'application/json') === $content_type ? 'selected' : '' ?>>
+                    <?= $content_type ?>
                 </option>
             <? endforeach; ?>
             </select>
@@ -68,7 +68,8 @@
     </fieldset>
 
     <div class="type-button">
-        <?= Studip\Button::createAccept('absenden', 'submit') ?>
+        <?= Studip\Button::createAccept(_('Absenden'), 'submit') ?>
+        <?= Studip\LinkButton::createCancel(_('Abbrechen'), $controller->url_for('client/index')) ?>
     </div>
 </form>
 

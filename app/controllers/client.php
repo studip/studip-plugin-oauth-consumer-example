@@ -11,6 +11,12 @@ spl_autoload_register(function ($name) {
 
 class ClientController extends StudipController
 {
+    public $content_types = array(
+        'application/json',
+        'text/php',
+        'text/xml',
+    );
+
     const CACHE_KEY_REQUEST_TOKEN = '/oauth/request_token/';
     const CONFIG_KEY_ACCESS_TOKEN = 'OAUTH_CLIENT_ACCESS_TOKEN';
 
@@ -40,7 +46,7 @@ class ClientController extends StudipController
         $resource = Request::get('resource');
         if ($resource) {
             try {
-                $this->result = $this->request($resource, $parameters, Request::option('format'),
+                $this->result = $this->request($resource, $parameters, Request::get('content_type'),
                                                Request::option('method'), Request::int('signed'),
                                                !Request::int('consume'));
             } catch (Exception $e) {
@@ -70,7 +76,8 @@ class ClientController extends StudipController
         $this->redirect('client');
     }
 
-    private function request($resource, $parameters = array(), $format = 'json', $method = 'GET', $signed = false, $raw = false)
+    private function request($resource, $parameters = array(), $content_type = 'application/json',
+                             $method = 'GET', $signed = false, $raw = false)
     {
         if ($signed) {
             $client = $this->signed();
@@ -79,7 +86,7 @@ class ClientController extends StudipController
         }
 
         if ($client) {
-            $uri  = $this->container['API_URL'] . "/$resource.$format";
+            $uri  = $this->container['API_URL'] . "/$resource";
             if (!empty($parameters)) {
                 if ($method === 'GET') {
                     $client->setParameterGet($parameters);
@@ -87,7 +94,7 @@ class ClientController extends StudipController
                     $client->setParameterPost($parameters);
                 }
             }
-            $client->setHeaders('Content-Type', 'application/json');
+            $client->setHeaders('Content-Type', $content_type);
             $client->setUri($uri);
             $client->setMethod($method);
             $response = $client->request();
@@ -98,7 +105,7 @@ class ClientController extends StudipController
                                   $response->getStatus(), $response->getMessage(),
                                   $response->getHeadersAsString(), $response->getBody());
             } else {
-                $result = $this->consumeResult($response->getBody(), $format);
+                $result = $this->consumeResult($response->getBody(), $content_type);
             }
             if ($response->isError()) {
                 throw new Exception($result, $response->getStatus());
@@ -150,13 +157,15 @@ class ClientController extends StudipController
         return $client;
     }
 
-    private function consumeResult($result, $format)
+    private function consumeResult($result, $content_type)
     {
-        if ($format === 'json') {
+        if ($content_type === 'application/json') {
             $result = json_decode($result, true);
             $result = array_map_recursive('studip_utf8decode', $result);
-        } elseif ($format === 'xml') {
+        } elseif ($content_type === 'text/xml') {
             $result = json_decode(json_encode(simplexml_load_string($result)), true);
+        } elseif ($content_type == 'text/php') {
+            $result = unserialize($result);
         }
 
         return $result;
