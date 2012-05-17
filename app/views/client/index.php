@@ -1,5 +1,3 @@
-<style>#parameters img { cursor: pointer; }</style>
-
 <h1><?= _('Testclient für OAuth') ?></h1>
 
 <form class="settings" action="<?= $controller->url_for('client') ?>" method="get">
@@ -15,7 +13,7 @@
         <div class="type-select">
             <label for="method"><?= _('Methode') ?></label>
             <select id="method" name="method">
-            <? foreach (words('GET POST PUT DELETE') as $method): ?>
+            <? foreach (words('GET POST PUT DELETE HEAD OPTIONS') as $method): ?>
                 <option value="<?= $method ?>" <?= Request::option('method', 'GET') === $method ? 'selected' : '' ?>>
                     <?= $method ?>
                 </option>
@@ -31,6 +29,7 @@
         <div class="type-select">
             <label for="content_type">Content-Type</label>
             <select id="content_type" name="content_type">
+                <option value="">- keine Angabe -</option>
             <? foreach ($controller->content_types as $content_type): ?>
                 <option <?= Request::get('content_type', 'application/json') === $content_type ? 'selected' : '' ?>>
                     <?= $content_type ?>
@@ -44,13 +43,13 @@
                 <?= _('Parameter') ?>
                 <?= Assets::img('icons/16/blue/plus', array('class' => 'text-top')) ?>
             </label>
-            <ul style="list-style:none;margin:0;padding:0;">
+            <ul>
             <? foreach ($parameters as $key => $value): ?>
                 <li>
                     <input class="small" type="text" name="parameters[name][]" value="<?= htmlReady($key) ?>" placeholder="<?= _('Name') ?>">
                     =
                 <? if (strpos($value, "\n") !== false): ?>
-                    <textarea name="parameters[value][]" class="small"><?= htmlReady($value) ?></textarea>
+                    <textarea name="parameters[value][]" class="small" placeholder="<?= _('Wert') ?>"><?= htmlReady($value) ?></textarea>
                 <? else: ?>
                     <input class="small" type="text" name="parameters[value][]" value="<?= htmlReady($value) ?>" placeholder="<?= _('Wert') ?>">
                 <? endif; ?>
@@ -75,33 +74,5 @@
 
 <? if (isset($result)): ?>
     <h2><?= _('Zurückgeliefertes Ergebnis') ?></h2>
-    <pre style="border: 1px solid #888; background: #ccc; padding: .5em; height: 20em; overflow: auto"><?= htmlReady(is_array($result) ? var_dump($result) : $result) ?></pre>
+    <pre id="result"><?= htmlReady(is_array($result) ? var_dump($result) : $result) ?></pre>
 <? endif; ?>
-
-<script>
-jQuery(function ($) {
-    $('#parameters')
-        .show()
-        .delegate('label img', 'click', function () {
-            $('#parameters ul li:last').clone().find('input').val('').text('').end().appendTo('#parameters ul');
-        })
-        .delegate('ul img[src*=trash]', 'click', function () {
-            var li = $(this).closest('li');
-            if (li.siblings().length) {
-                li.remove();
-            } else {
-                li.find('input').val('');
-            }
-        })
-        .delegate('ul img[src*=guestbook]', 'click', function () {
-            var prev = $(this).prev(),
-                replacement;
-            if (prev.is('input')) {
-                replacement = $('<textarea class="small"/>').attr('name', prev.attr('name')).text(prev.val());
-            } else {
-                replacement = $('<input type="text" placeholder="<?= _('Wert') ?>" class="small"/>').attr('name', prev.attr('name')).val(prev.text())
-            }
-            prev.replaceWith(replacement);
-        });
-});
-</script>

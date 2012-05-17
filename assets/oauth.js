@@ -17,11 +17,32 @@ jQuery(function($) {
     });
     return event.preventDefault();
   });
-  return $('[data-behaviour~=confirm]').live('click', function(event) {
+  $('[data-behaviour~=confirm]').live('click', function(event) {
     var message, title;
     title = $(this).attr('title') || $(this).val() || $(this).text();
     message = 'Wollen Sie die folgende Aktion wirklich ausführen?'.toLocaleString();
     message += "\n\n\"" + title + "\"";
     if (!confirm(message)) return event.preventDefault();
+  });
+  return $('#parameters').show().on('click', 'label img', function() {
+    return $('#parameters ul li:last').clone().find('input').val('').text('').end().appendTo('#parameters ul');
+  }).on('click', 'ul img[src*=trash]', function() {
+    var li;
+    li = $(this).closest('li');
+    if (li.siblings().length) {
+      return li.remove();
+    } else {
+      return li.find('input').val('');
+    }
+  }).on('click', 'ul img[src*=guestbook]', function() {
+    var prev, replacement;
+    prev = $(this).prev();
+    if (prev.is('input')) {
+      replacement = $('<textarea class="small"/>').attr('name', prev.attr('name')).text(prev.val());
+    } else {
+      replacement = $('<input type="text" class="small"/>').attr('placeholder', 'Wert'.toLocaleString()).attr('name', prev.attr('name')).val(prev.text());
+    }
+    prev.replaceWith(replacement);
+    return replace.focus();
   });
 });

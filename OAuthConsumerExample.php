@@ -13,7 +13,7 @@ class OAuthConsumerExample extends StudIPPlugin implements SystemPlugin {
 
     function initialize()
     {
-        PageLayout::addStylesheet($this->getPluginURL() . '/assets/form-settings.css');
+        $this->addStylesheet('assets/form-settings.less');
         PageLayout::addScript($this->getPluginURL() . '/assets/oauth.js');
     }
 
@@ -48,4 +48,32 @@ class OAuthConsumerExample extends StudIPPlugin implements SystemPlugin {
 
         return $container;
     }
+
+    /**
+     * Includes given stylesheet in page, compiles less if neccessary
+     *
+     * @param String $filename Name of the stylesheet (css or less) to include
+     *                         (relative to plugin directory)
+     */
+    private function addStylesheet($filename)
+    {
+        if (substr($filename, -5) === '.less') {
+            $less_file = $GLOBALS['ABSOLUTE_PATH_STUDIP']
+                       . $this->getPluginPath() . '/'
+                       . $filename;
+            $css_file  = $GLOBALS['ABSOLUTE_PATH_STUDIP']
+                       . $this->getPluginPath() . '/'
+                       . substr($filename, 0, -5) . '.css';
+
+            if (!file_exists($css_file) || filemtime($css_file) < filemtime($less_file)) {
+                require_once 'vendor/lessphp/lessc.inc.php';
+                $compiler = new lessc($this->getPluginPath() . '/' . $filename);
+                $css = $compiler->parse();
+                file_put_contents($css_file, $css);
+            }
+            $filename  = substr($filename, 0, -5) . '.css';
+        }
+        PageLayout::addStylesheet($this->getPluginURL() . '/' . $filename);
+    }
+
 }
