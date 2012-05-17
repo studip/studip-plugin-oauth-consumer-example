@@ -5,7 +5,7 @@ set_include_path(get_include_path() . PATH_SEPARATOR . realpath(dirname(__FILE__
 spl_autoload_register(function ($name) {
     $file = str_replace(array('\\', '_'), '/', $name);
     $file = '/vendor/' . $file . '.php';
-    $path = realpath(dirname(__FILE__).'/../..');
+    $path = realpath(dirname(__FILE__) . '/../..');
     include_once $path . $file;
 }, false, true);
 
@@ -40,7 +40,6 @@ class ClientController extends StudipController
         $parameters = Request::getArray('parameters');
         if (!empty($parameters) and !empty($parameters['name']) and !empty($parameters['value'])) {
             $parameters = array_combine($parameters['name'], $parameters['value']);
-            $parameters = array_filter($parameters);
         }
 
         $resource = Request::get('resource');
@@ -90,7 +89,9 @@ class ClientController extends StudipController
             if (!empty($parameters)) {
                 if ($method === 'GET') {
                     $client->setParameterGet($parameters);
-                } else if ($method === 'POST') {
+                } elseif ($method !== 'POST') {
+                    $client->setRawData(http_build_query($parameters));
+                } else {
                     $client->setParameterPost($parameters);
                 }
             }
