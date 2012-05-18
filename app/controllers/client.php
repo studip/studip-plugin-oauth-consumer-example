@@ -39,7 +39,14 @@ class ClientController extends StudipController
     {
         $parameters = Request::getArray('parameters');
         if (!empty($parameters) and !empty($parameters['name']) and !empty($parameters['value'])) {
-            $parameters = array_combine($parameters['name'], $parameters['value']);
+            foreach ($parameters['name'] as $index => $name) {
+                if (empty($name)) {
+                    unset($parameters['name'][$index], $parameters['value'][$index]);
+                }
+            }
+            $parameters = empty($parameters['name'])
+                        ? array()
+                        : array_combine($parameters['name'], $parameters['value']);
         }
 
         $resource = Request::get('resource');
