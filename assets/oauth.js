@@ -32,17 +32,18 @@ jQuery(function($) {
     if (li.siblings().length) {
       return li.remove();
     } else {
-      return li.find('input').val('');
+      return li.find('input').val('').end().find('textarea').text('');
     }
   }).on('click', 'ul img[src*=guestbook]', function() {
     var prev, replacement;
     prev = $(this).prev();
     if (prev.is('input')) {
-      replacement = $('<textarea class="small"/>').attr('name', prev.attr('name')).text(prev.val());
+      replacement = $('<textarea/>').text(prev.val());
     } else {
-      replacement = $('<input type="text" class="small"/>').attr('placeholder', 'Wert'.toLocaleString()).attr('name', prev.attr('name')).val(prev.text());
+      replacement = $('<input type="text"/>').val(prev.text());
     }
+    replacement.attr('placeholder', 'Wert'.toLocaleString()).attr('name', prev.attr('name')).addClass('small');
     prev.replaceWith(replacement);
-    return replace.focus();
+    return replacement.focus();
   });
 });

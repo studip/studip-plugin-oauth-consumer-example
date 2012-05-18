@@ -28,15 +28,16 @@ jQuery ($) ->
             if li.siblings().length
                 li.remove();
             else
-                li.find('input').val('')
+                li.find('input').val('').end().find('textarea').text('')
         .on 'click', 'ul img[src*=guestbook]', ->
             prev = $(this).prev()
             if prev.is('input')
-                replacement = $('<textarea class="small"/>').attr('name', prev.attr('name')).text(prev.val())
+                replacement = $('<textarea/>').text(prev.val())
             else
-                replacement = $('<input type="text" class="small"/>')
-                                .attr('placeholder', 'Wert'.toLocaleString())
-                                .attr('name', prev.attr('name'))
-                                .val(prev.text())
+                replacement = $('<input type="text"/>').val(prev.text())
+            replacement.attr('placeholder', 'Wert'.toLocaleString())
+                       .attr('name', prev.attr('name'))
+                       .addClass('small')
+
             prev.replaceWith(replacement)
-            replace.focus()
+            replacement.focus()
