@@ -93,16 +93,14 @@ class ClientController extends StudipController
 
         if ($client) {
             $uri  = $this->container['API_URL'] . "/$resource";
+            $client->setHeaders('Content-Type', $content_type);
             if (!empty($parameters)) {
                 if ($method === 'GET') {
                     $client->setParameterGet($parameters);
-                } elseif ($method !== 'POST') {
-                    $client->setRawData(http_build_query($parameters));
                 } else {
-                    $client->setParameterPost($parameters);
+                    $client->setRawData(http_build_query($parameters), $content_type);
                 }
             }
-            $client->setHeaders('Content-Type', $content_type);
             $client->setUri($uri);
             $client->setMethod($method);
             $response = $client->request();
