@@ -53,7 +53,7 @@ class ClientController extends StudipController
         if ($resource) {
             try {
                 $this->result = $this->request($resource, $parameters, Request::get('content_type'),
-                                               Request::option('method'), Request::int('signed'),
+                                               Request::option('method'), Request::optionArray('signed'),
                                                !Request::int('consume'));
             } catch (Exception $e) {
                 $details = array(nl2br($e->getMessage()));
@@ -83,12 +83,20 @@ class ClientController extends StudipController
     }
 
     private function request($resource, $parameters = array(), $content_type = 'application/json',
-                             $method = 'GET', $signed = false, $raw = false)
+                             $method = 'GET', $signed = array(), $raw = false)
     {
-        if ($signed) {
+        if (in_array('oauth', $signed)) {
             $client = $this->signed();
         } else {
             $client = new Zend_Http_Client;
+        }
+        
+        if (in_array('studip', $signed)) {
+            $client->setCookie('Seminar_Session', $_COOKIE['Seminar_Session']);
+        }
+        if (in_array('http', $signed)) {
+            $client->setAuth(Request::get('http-username'), Request::get('http-password'),
+                             Zend_Http_Client::AUTH_BASIC);
         }
 
         if ($client) {

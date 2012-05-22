@@ -22,8 +22,26 @@
         </div>
 
         <div class="type-checkbox">
-            <label for="signed"><?= _('Signiert') ?></label>
-            <input type="checkbox" id="signed" name="signed" value="1" <?= Request::int('signed', 1) ? 'checked' : ''?>>
+        <? $signed = Request::optionArray('signed'); ?>
+            <label for><?= _('Autorisierung') ?></label>
+            <label>
+                <input type="checkbox" name="signed[]" value="oauth" <?= in_array('oauth', $signed) ? 'checked' : ''?>>
+                OAuth
+            </label>
+            <label>
+                <input type="checkbox" name="signed[]" value="studip" <?= in_array('studip', $signed) ? 'checked' : ''?>>
+                Stud.IP
+            </label>
+            <label>
+                <input type="checkbox" name="signed[]" value="http" <?= in_array('http', $signed) ? 'checked' : ''?>>
+                HTTP
+            </label>
+        </div>
+        
+        <div class="type-text auth-http">
+            <label for="http-username">HTTP</label>
+            <input class="small" type="text" name="http-username" id="http-username" value="<?= Request::get('http-username') ?>" placeholder="<?= _('Nutzername') ?>">
+            <input class="small" type="password" name="http-password" value="<?= Request::get('http-password') ?>" placeholder="<?= _('Passwort') ?>">
         </div>
 
         <div class="type-select">
@@ -39,7 +57,7 @@
         </div>
         
         <div id="parameters" class="type-text" style="display:none;">
-            <label>
+            <label for>
                 <?= _('Parameter') ?>
                 <?= Assets::img('icons/16/blue/plus', array('class' => 'text-top')) ?>
             </label>
@@ -76,3 +94,9 @@
     <h2><?= _('Zurückgeliefertes Ergebnis') ?></h2>
     <pre id="result"><?= htmlReady(is_array($result) ? var_dump($result) : $result) ?></pre>
 <? endif; ?>
+
+<script>
+$(':checkbox[name="signed[]"][value=http]').change(function () {
+    $('.auth-http').stop().toggle(this.checked);
+}).change();
+</script>

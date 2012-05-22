@@ -41,14 +41,14 @@ form.settings fieldset > div {
   position:relative;
 }
 form.settings fieldset > div:nth-child(2n + 1) { background:#e7ebf1; }
-form.settings fieldset > div:hover label { background-color:#ffffee; }
+form.settings fieldset > div:hover label[for] { background-color:#ffffee; }
 form.settings fieldset > div.centered {
   background-color:inherit;
   padding:1em 0.5em !important;
   text-align:center;
 }
 form.settings fieldset > div.type-text, form.settings fieldset > div.type-checkbox, form.settings fieldset > div.type-select { zoom:1; }
-form.settings fieldset > div label {
+form.settings fieldset > div label[for]:first-child {
   background:#ffffff;
   bottom:0;
   left:0;
@@ -58,7 +58,7 @@ form.settings fieldset > div label {
   text-align:right;
   top:0;
 }
-form.settings fieldset > div label small { color:#444444; }
+form.settings fieldset > div label[for]:first-child small { color:#444444; }
 form.settings .type-button { text-align:center; }
 form.settings.horizontal fieldset {
   display:inline-block;
