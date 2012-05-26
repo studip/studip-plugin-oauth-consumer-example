@@ -1,6 +1,4 @@
 <?php
-require_once 'bootstrap.php';
-
 class OAuthConsumerExample extends StudIPPlugin implements SystemPlugin {
 
     function __construct() {
@@ -13,6 +11,8 @@ class OAuthConsumerExample extends StudIPPlugin implements SystemPlugin {
 
     function initialize()
     {
+        require_once 'bootstrap.php';
+
         $this->addStylesheet('assets/form-settings.less');
         PageLayout::addScript($this->getPluginURL() . '/assets/oauth.js');
     }

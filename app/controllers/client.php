@@ -175,12 +175,12 @@ class ClientController extends StudipController
     {
         if ($content_type === 'application/json') {
             $result = json_decode($result, true);
-            $result = array_map_recursive('studip_utf8decode', $result);
         } elseif ($content_type === 'text/xml') {
             $result = json_decode(json_encode(simplexml_load_string($result)), true);
         } elseif ($content_type == 'text/php') {
             $result = unserialize($result);
         }
+        $result = array_map_recursive('studip_utf8decode', $result);
 
         return $result;
     }
