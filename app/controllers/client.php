@@ -33,6 +33,8 @@ class ClientController extends StudipController
         
         $this->config = UserConfig::get($GLOBALS['user']->id);
         $this->cache  = StudipCacheFactory::getCache();
+        
+        URLHelper::removeLinkParam('cid');
     }
 
     function index_action()
@@ -106,7 +108,8 @@ class ClientController extends StudipController
                 if ($method === 'GET') {
                     $client->setParameterGet($parameters);
                 } else {
-                    $client->setRawData(http_build_query($parameters), $content_type);
+                    $client->setParameterPost($parameters);
+//                    $client->setRawData(http_build_query($parameters), $content_type);
                 }
             }
             $client->setUri($uri);
