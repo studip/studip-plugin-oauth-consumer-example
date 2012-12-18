@@ -13,7 +13,8 @@ class OAuthConsumerExample extends StudIPPlugin implements SystemPlugin {
     {
         require_once 'bootstrap.php';
 
-        $this->addStylesheet('assets/form-settings.less');
+        PageLayout::addStylesheet($this->getPluginURL() . '/assets/buttons.css');
+        PageLayout::addStylesheet($this->getPluginURL() . '/assets/form-settings.css');
         PageLayout::addScript($this->getPluginURL() . '/assets/oauth.js');
     }
 

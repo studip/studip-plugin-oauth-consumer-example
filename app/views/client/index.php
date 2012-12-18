@@ -85,8 +85,8 @@
     </fieldset>
 
     <div class="type-button">
-        <?= Studip\Button::createAccept(_('Absenden'), 'submit') ?>
-        <?= Studip\LinkButton::createCancel(_('Abbrechen'), $controller->url_for('client/index')) ?>
+        <?= Button::createAccept(_('Absenden'), 'submit') ?>
+        <?= LinkButton::createCancel(_('Abbrechen'), $controller->url_for('client/index')) ?>
     </div>
 </form>
 
