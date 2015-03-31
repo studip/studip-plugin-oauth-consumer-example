@@ -1,16 +1,8 @@
-<?
-if (!function_exists('array_map_recursive')) {
-    function array_map_recursive($func, $arr){
-      $a = array(); 
-      if(is_array($arr))
-        foreach($arr as $k => $v)
-          $a[$k] = is_array($v) ? array_map_recursive($func, $v) : $func($v);
-      return $a;
-    }
-}
+<?php
 
 require_once 'vendor/trails/trails.php';
 require_once 'app/controllers/studip_controller.php';
+require_once 'vendor/autoload.php';
 
 // Populate $_DELETE, $_HEAD, $_OPTIONS and $_PUT
 foreach (words('DELETE HEAD OPTIONS PUT') as $method) {

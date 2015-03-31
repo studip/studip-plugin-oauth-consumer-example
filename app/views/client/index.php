@@ -59,7 +59,7 @@
         <div id="parameters" class="type-text" style="display:none;">
             <label for>
                 <?= _('Parameter') ?>
-                <?= Assets::img('icons/16/blue/plus', array('class' => 'text-top')) ?>
+                <?= Assets::input('icons/16/blue/add.png', array('class' => 'text-top add')) ?>
             </label>
             <ul>
             <? foreach ($parameters as $key => $value): ?>
@@ -71,8 +71,8 @@
                 <? else: ?>
                     <input class="small" type="text" name="parameters[value][]" value="<?= htmlReady($value) ?>" placeholder="<?= _('Wert') ?>">
                 <? endif; ?>
-                    <?= Assets::img('icons/16/blue/guestbook', array('class' => 'text-top')) ?>
-                    <?= Assets::img('icons/16/blue/trash', array('class' => 'text-top')) ?>
+                    <?= Assets::input('icons/16/blue/guestbook', array('class' => 'text-top', 'class' => 'convert')) ?>
+                    <?= Assets::input('icons/16/blue/trash', array('class' => 'text-top', 'class' => 'remove')) ?>
                 </li>
             <? endforeach; ?>
             </ul>
