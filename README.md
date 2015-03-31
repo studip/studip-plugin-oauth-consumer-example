@@ -11,4 +11,4 @@ Although the library used for the server side implementation could also manage t
 
 ## Credits
 
-- OAuth client uses the [OAuth library](http://framework.zend.com/manual/en/zend.oauth.introduction.html) from the [Zend Framework 1.11](http://framework.zend.com/)
+- OAuth client uses [Guzzle](https://github.com/guzzle/guzzle) with the [Guzzle OAuth Subscriber](https://github.com/guzzle/oauth-subscriber)
