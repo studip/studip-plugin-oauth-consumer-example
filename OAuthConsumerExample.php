@@ -32,17 +32,37 @@ class OAuthConsumerExample extends StudIPPlugin implements SystemPlugin
     {
         $container = new Pimple\Container();
 
-        $container['CONSUMER_KEY'] = 'ec17139d5c9a1f3e88f48960d3faec5105375ddc2';
-        $container['CONSUMER_SECRET'] = '9d6252273b4cb08396f25f3f42332a5e';
-
         # workaround to get an absolute URL
         URLHelper::setBaseURL($GLOBALS['ABSOLUTE_URI_STUDIP']);
 
-        $container['PROVIDER_URL'] = PluginEngine::getURL('restipplugin', array(), 'oauth/', true);
-        $container['API_URL'] = PluginEngine::getURL('restipplugin', array(), 'api/', true);
-
         $container['CONSUMER_URL'] = PluginEngine::getURL($this, array(), 'client/', true);
 
+        if ($this->coreAPIEnabled()) {
+            $container['core'] = array(
+                'PROVIDER_URL'    => URLHelper::getURL('dispatch.php/api/oauth/', null, true),
+                'API_URL'         => URLHelper::getURL('api.php/', null, true),
+                'API_PROVIDER'    => 'CoreAPIProvider',
+            );
+        }
+
+        if ($this->restIPEnabled()) {
+            $container['rest.ip'] = array(
+                'PROVIDER_URL'    => PluginEngine::getURL('restipplugin', array(), 'oauth/', true),
+                'API_URL'         => PluginEngine::getURL('restipplugin', array(), 'api/', true),
+                'API_PROVIDER'    => 'RestIPProvider',
+            );
+        }
+
         return $container;
+    }
+
+    public function coreAPIEnabled()
+    {
+        return Config::get()->API_ENABLED;
+    }
+
+    public function restIPEnabled()
+    {
+        return PluginEngine::getPlugin('RestipPlugin') !== null;
     }
 }

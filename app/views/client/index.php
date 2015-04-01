@@ -1,8 +1,59 @@
+<?php
+$MAX_LABEL_LENGTH = 80;
+$substr = function ($string) use ($MAX_LABEL_LENGTH) {
+    if (strlen($string) <= $MAX_LABEL_LENGTH) {
+        return $string;
+    }
+    return studip_substr($string, 0, $MAX_LABEL_LENGTH) . '...';
+};
+?>
 <h1><?= _('Testclient für OAuth') ?></h1>
 
-<form class="settings" action="<?= $controller->url_for('client') ?>" method="get">
+<form class="settings" action="<?= $controller->url_for('client/' . $auth) ?>" method="get">
+    <input type="hidden" name="target" value="<?= htmlReady($target) ?>">
+    
     <fieldset>
         <legend><?= _('Request durchführen') ?></legend>
+
+    <? if ($auth === 'oauth'): ?>
+        <div class="type-select">
+            <label for="consumer_id"><?= _('Consumer') ?></label>
+            <select required name="consumer_id" id="consumer_id">
+                <option value=""></option>
+            <? foreach ($provider->getConsumers() as $consumer): ?>
+                <option value="<?= htmlReady($consumer['id']) ?>" <? if ($consumer['id'] === $consumer_id) echo 'selected'; ?>>
+                    <?= htmlReady($consumer['title']) ?>
+                </option>
+            <? endforeach; ?>
+            </select>
+        </div>
+    <? endif; ?>
+
+    <? if ($auth === 'basic'): ?>
+        <div class="type-text auth-http">
+            <label for="http-username">HTTP Credentials</label>
+            <input class="small" type="text" name="http-username" id="http-username" value="<?= Request::get('http-username') ?>" placeholder="<?= _('Nutzername') ?>">
+            <input class="small" type="password" name="http-password" value="<?= Request::get('http-password') ?>" placeholder="<?= _('Passwort') ?>">
+        </div>
+    <? endif; ?>
+
+    <? if ($discovery): ?>
+        <div class="type-select">
+            <label for="discovery"><?= _('Resourcen') ?></label>
+            <select id="discovery">
+                <option value=""></option>
+            <? foreach ($discovery as $route => $methods): ?>
+                <? foreach ($methods as $method => $label): ?>
+                    <option data-method="<?= htmlReady($method) ?>" data-route="<?= htmlReady($route) ?>"
+                        <? if (strlen($label) > $MAX_LABEL_LENGTH) printf('title="%s"', htmlReady($label)) ?>
+                        <? if (('/' . Request::get('resource', 'discovery')) === $route && Request::option('method', 'GET') === strtoupper($method)) echo 'selected'; ?>>
+                        <?= htmlReady($substr($label)) ?>
+                    </option>
+                <? endforeach; ?>
+            <? endforeach; ?>
+            </select>
+        </div>
+    <? endif; ?>
 
         <div class="type-text">
             <label for="resource"><?= _('Angeforderte Resource') ?></label>
@@ -20,30 +71,7 @@
             <? endforeach; ?>
             </select>
         </div>
-
-        <div class="type-checkbox">
-        <? $signed = Request::optionArray('signed'); ?>
-            <label for><?= _('Autorisierung') ?></label>
-            <label>
-                <input type="checkbox" name="signed[]" value="oauth" <?= in_array('oauth', $signed) ? 'checked' : ''?>>
-                OAuth
-            </label>
-            <label>
-                <input type="checkbox" name="signed[]" value="studip" <?= in_array('studip', $signed) ? 'checked' : ''?>>
-                Stud.IP
-            </label>
-            <label>
-                <input type="checkbox" name="signed[]" value="http" <?= in_array('http', $signed) ? 'checked' : ''?>>
-                HTTP
-            </label>
-        </div>
-        
-        <div class="type-text auth-http">
-            <label for="http-username">HTTP</label>
-            <input class="small" type="text" name="http-username" id="http-username" value="<?= Request::get('http-username') ?>" placeholder="<?= _('Nutzername') ?>">
-            <input class="small" type="password" name="http-password" value="<?= Request::get('http-password') ?>" placeholder="<?= _('Passwort') ?>">
-        </div>
-
+    
         <div class="type-select">
             <label for="content_type">Content-Type</label>
             <select id="content_type" name="content_type">
@@ -85,18 +113,12 @@
     </fieldset>
 
     <div class="type-button">
-        <?= Studip\Button::createAccept(_('Absenden'), 'submit') ?>
-        <?= Studip\LinkButton::createCancel(_('Abbrechen'), $controller->url_for('client/index')) ?>
+        <?= Studip\Button::createAccept(_('Absenden'), 'submit', array('tabindex' => 1)) ?>
+        <?= Studip\LinkButton::createCancel(_('Abbrechen'), $controller->url_for('client/' . $auth, compact('target'))) ?>
     </div>
 </form>
 
 <? if (isset($result)): ?>
     <h2><?= _('Zurückgeliefertes Ergebnis') ?></h2>
-    <pre id="result"><?= htmlReady(is_array($result) ? var_dump($result) : $result) ?></pre>
+    <pre id="result"><?= htmlReady(is_array($result) ? (defined('JSON_PRETTY_PRINT') ? studip_utf8decode(json_encode(studip_utf8encode($result), JSON_PRETTY_PRINT)) : print_r($result, true)) : $result) ?></pre>
 <? endif; ?>
-
-<script>
-$(':checkbox[name="signed[]"][value=http]').change(function () {
-    $('.auth-http').stop().toggle(this.checked);
-}).change();
-</script>

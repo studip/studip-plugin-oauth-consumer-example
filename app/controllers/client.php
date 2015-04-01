@@ -9,11 +9,24 @@ class ClientController extends StudipController
         'text/xml',
     );
 
-    const CACHE_KEY_REQUEST_TOKEN = '/oauth/request_token/';
-    const CONFIG_KEY_ACCESS_TOKEN = 'OAUTH_CLIENT_ACCESS_TOKEN';
+    public $auth_types = array(
+        'oauth'  => 'OAuth',
+        'studip' => 'Stud.IP',
+        'basic'  => 'HTTP',
+    );
+
+    const CACHE_KEY_REQUEST_TOKEN  = '/oauth/request_token/';
+    const CACHE_KEY_DISCOVERY      = '/api-client/discovery/';
+    const CACHE_DURATION_DISCOVERY = 604800; // 7 * 24 * 60 * 60
+    const CONFIG_KEY_ACCESS_TOKEN  = 'OAUTH_CLIENT_ACCESS_TOKEN';
 
     public function before_filter(&$action, &$args)
     {
+        if (!method_exists($this, $action . '_action')) {
+            array_unshift($args, $action);
+            $action = 'index';
+        }
+
         parent::before_filter($action, $args);
 
         $this->set_layout($GLOBALS['template_factory']->open('layouts/base.php'));
@@ -23,52 +36,69 @@ class ClientController extends StudipController
         # make container even more accessible
         $this->container = $this->dispatcher->container;
 
+        $this->plugin = $this->dispatcher->plugin;
+
         $this->config = UserConfig::get($GLOBALS['user']->id);
         $this->cache  = StudipCacheFactory::getCache();
+
+        $this->targets = $this->getTargets();
+        $this->target  = Request::get('target', reset(array_keys($this->targets)));
+
+        $config          = $this->container[$this->target];
+        $this->provider  = new $config['API_PROVIDER']($config);
+
+        $this->consumer_id = Request::option('consumer_id');
+        if ($this->consumer_id) {
+            $this->provider->setConsumer($this->consumer_id);
+        }
     }
 
-    public function index_action()
+    public function index_action($auth_type = 'oauth')
     {
-        $parameters = Request::getArray('parameters');
-        if (!empty($parameters) and !empty($parameters['name']) and !empty($parameters['value'])) {
-            foreach ($parameters['name'] as $index => $name) {
-                if (empty($name)) {
-                    unset($parameters['name'][$index], $parameters['value'][$index]);
-                }
-            }
-            $parameters = empty($parameters['name'])
-                        ? array()
-                        : array_combine($parameters['name'], $parameters['value']);
+        if (empty($this->targets)) {
+            $this->render_template('client/no-targets.php', $GLOBALS['template_factory']->open('layouts/base.php'));
+            return;
         }
+
+        $this->parameters = $this->extractParameters();
+        $this->auth       = $auth_type;
+        $this->discovery  = $this->getDiscovery($this->target);
 
         $resource = Request::get('resource');
         if ($resource) {
             try {
-                $this->result = $this->request($resource, $parameters, Request::get('content_type'),
-                                               Request::option('method'), Request::optionArray('signed'),
+                $this->result = $this->request($resource, $this->parameters, Request::get('content_type'),
+                                               Request::option('method'), $auth_type,
                                                !Request::int('consume'));
             } catch (Exception $e) {
                 $details = explode(PHP_EOL, $e->getMessage());
+                if ($e->getResponse()) {
+                    $details[] = (string)$e->getResponse()->getBody();
+                    $details[] = 'Request headers';
+                    foreach ($e->getRequest()->getHeaders() as $key => $value) {
+                        $details[] = sprintf('%s = "%s"', htmlReady($key), htmlReady(implode(', ', $value)));
+                    }
+                    $details[] = 'Response headers';
+                    foreach ($e->getResponse()->getHeaders() as $key => $value) {
+                        $details[] = sprintf('%s = "%s"', htmlReady($key), htmlReady(implode(', ', $value)));
+                    }
+                }
+
                 $message = MessageBox::error(_('Fehler!'), $details);
                 PageLayout::postMessage($message);
             }
         }
 
-        if (empty($parameters)) {
-            $parameters = array('' => '');
-        }
-        $this->parameters = $parameters;
+        $this->setupSidebar($this->target, $auth_type);
+    }
 
-        $actions = new ActionsWidget();
-        if ($this->getRequestToken()) {
-            $actions->addLink(_('Request-Token anzeigen'), $this->url_for('client/token/request'), 'icons/16/blue/visibility-visible.png')->asDialog();
-            $actions->addLink(_('Request-Token löschen'), $this->url_for('client/clear_cache/request'), 'icons/16/blue/refresh.png');
-        }
-        if ($this->getAccessToken()) {
-            $actions->addLink(_('Access-Token anzeigen'), $this->url_for('client/token/access'), 'icons/16/blue/visibility-visible.png')->asDialog();
-            $actions->addLink(_('Access-Token löschen'), $this->url_for('client/clear_cache/access'), 'icons/16/blue/refresh.png');
-        }
-        Sidebar::get()->addWidget($actions);
+    public function discovery_action($auth_type)
+    {
+        $result = $this->request('discovery', array(), 'application/json', 'get', 'studip', false);
+        $discovery = $this->provider->normalizeDiscovery($result);
+        $this->setDiscovery($this->target, $discovery);
+        
+        $this->relocate('client/' . $auth_type, array('target' => $this->target));
     }
 
     public function token_action($type)
@@ -89,9 +119,9 @@ class ClientController extends StudipController
         }
 
         PageLayout::postMessage(MessageBox::success(_('Das OAuth-Token wurde gelöscht.')));
-        $this->redirect('client');
+        $this->relocate('client', array('target' => Request::get('target')));
     }
-    
+
     public function success_action()
     {
         if (Request::submitted('oauth_token')) {
@@ -104,36 +134,35 @@ class ClientController extends StudipController
         }
 
         $this->setRequestToken(false);
-        
-        $this->redirect('client');
+
+        $this->relocate('client/oauth', array(
+            'target'      => Request::get('target'),
+            'consumer_id' => Request::option('consumer_id'),
+        ));
     }
 
     protected function request($resource, $parameters = array(), $content_type = 'application/json',
-                             $method = 'GET', $signed = array(), $raw = false)
+                             $method = 'GET', $auth_type, $raw = false)
     {
         $request_options = array();
 
         $defaults = array(
-            'base_url' => $this->container['API_URL'],
+            'base_url' => $this->provider->getConfig('API_URL'),
             'headers'  => array(
                 'Content-Type' => $content_type,
             ),
         );
         $client = new GuzzleHttp\Client($defaults);
 
-        if (in_array('oauth', $signed)) {
+        if ($auth_type === 'oauth') {
             $request_options['auth'] = 'oauth';
 
             $this->attach_oauth($client);
-        }
-
-        if (in_array('studip', $signed)) {
+        } elseif ($auth_type === 'studip') {
             $request_options['cookies'] = array(
                 'Seminar_Session' => $_COOKIE['Seminar_Session'],
             );
-        }
-
-        if (in_array('http', $signed)) {
+        } elseif ($auth_type === 'basic') {
             $request_options['auth'] = array(
                 Request::get('http-username'),
                 Request::get('http-password'),
@@ -145,7 +174,9 @@ class ClientController extends StudipController
             if ($method === 'GET') {
                 $query = $request->getQuery();
                 foreach ($parameters as $key => $value) {
-                    $query->set($key, $value);
+                    if ($key) {
+                        $query->set($key, $value);
+                    }
                 }
             } else {
                 $postBody = $request->getBody();
@@ -170,7 +201,6 @@ class ClientController extends StudipController
         }
     }
 
-
     protected function attach_oauth(&$client)
     {
         $access_token = $this->getAccessToken();
@@ -181,17 +211,20 @@ class ClientController extends StudipController
 
                 $this->setRequestToken($token);
 
-                $url = URLHelper::getURL($this->container['PROVIDER_URL'] . 'authorize', array(
+                $url = URLHelper::getURL($this->provider->getConfig('PROVIDER_URL') . 'authorize', array(
                     'oauth_token'    => $token['oauth_token'],
-                    'oauth_callback' => $this->url_for('client/success'),
+                    'oauth_callback' => URLHelper::getURL($this->container['CONSUMER_URL'] . 'success', array(
+                        'target'      => $this->target,
+                        'consumer_id' => $this->provider->getConsumerId(),
+                    )),
                 ));
                 $this->redirect($url);
             }
         }
 
         $oauth = new GuzzleHttp\Subscriber\Oauth\Oauth1(array(
-            'consumer_key'    => $this->container['CONSUMER_KEY'],
-            'consumer_secret' => $this->container['CONSUMER_SECRET'],
+            'consumer_key'    => $this->provider->getconfig('CONSUMER_KEY'),
+            'consumer_secret' => $this->provider->getConfig('CONSUMER_SECRET'),
             'token'           => $access_token['oauth_token'],
             'token_secret'    => $access_token['oauth_token_secret'],
         ));
@@ -205,7 +238,7 @@ class ClientController extends StudipController
             ? unserialize($cached)
             : false;
     }
-    
+
     protected function setRequestToken($token)
     {
         if ($token === false) {
@@ -218,14 +251,14 @@ class ClientController extends StudipController
     protected function requestOauthRequestToken()
     {
         $token_client = new GuzzleHttp\Client(array(
-            'base_url' => $this->container['PROVIDER_URL'],
+            'base_url' => $this->provider->getConfig('PROVIDER_URL'),
             'defaults' => array(
                 'auth' => 'oauth',
             ),
         ));
         $token_client->getEmitter()->attach(new GuzzleHttp\Subscriber\Oauth\Oauth1(array(
-            'consumer_key'    => $this->container['CONSUMER_KEY'],
-            'consumer_secret' => $this->container['CONSUMER_SECRET'],
+            'consumer_key'    => $this->provider->getConfig('CONSUMER_KEY'),
+            'consumer_secret' => $this->provider->getConfig('CONSUMER_SECRET'),
         )));
 
         $request  = $token_client->createRequest('POST', 'request_token');
@@ -244,7 +277,7 @@ class ClientController extends StudipController
             ? unserialize($cached)
             : false;
     }
-    
+
     protected function setAccessToken($token)
     {
         if ($token === false) {
@@ -257,14 +290,14 @@ class ClientController extends StudipController
     protected function requestOauthAccessToken($request_token, $verifier)
     {
         $token_client = new GuzzleHttp\Client(array(
-            'base_url' => $this->container['PROVIDER_URL'],
+            'base_url' => $this->provider->getConfig('PROVIDER_URL'),
             'defaults' => array(
                 'auth' => 'oauth',
             ),
         ));
         $token_client->getEmitter()->attach(new GuzzleHttp\Subscriber\Oauth\Oauth1(array(
-            'consumer_key'    => $this->container['CONSUMER_KEY'],
-            'consumer_secret' => $this->container['CONSUMER_SECRET'],
+            'consumer_key'    => $this->provider->getconfig('CONSUMER_KEY'),
+            'consumer_secret' => $this->provider->getConfig('CONSUMER_SECRET'),
             'token'           => $request_token['oauth_token'],
             'token_secret'    => $request_token['oauth_token_secret'],
             'verifier'        => $verifier,
@@ -296,5 +329,85 @@ class ClientController extends StudipController
         $result = studip_utf8decode($result);
 
         return $result;
+    }
+
+    protected function getTargets()
+    {
+        $targets = array();
+        if ($this->plugin->coreAPIEnabled()) {
+            $targets['core'] = _('Kern');
+        }
+        if ($this->plugin->restIPEnabled()) {
+            $targets['rest.ip'] = _('Rest.IP');
+        }
+        return $targets;
+    }
+
+    protected function extractParameters()
+    {
+        $parameters = Request::getArray('parameters');
+        if (!empty($parameters) && !empty($parameters['name']) && !empty($parameters['value'])) {
+            foreach ($parameters['name'] as $index => $name) {
+                if (empty($name)) {
+                    unset($parameters['name'][$index], $parameters['value'][$index]);
+                }
+            }
+            $parameters = empty($parameters['name'])
+                        ? array()
+                        : array_combine($parameters['name'], $parameters['value']);
+        }
+        if (empty($parameters)) {
+            $parameters = array('' => '');
+        }
+        return $parameters;
+    }
+
+    protected function getDiscovery($target)
+    {
+        $cached = $this->cache->read(SELF::CACHE_KEY_DISCOVERY . $target);
+        return $cached
+            ? unserialize($cached)
+            : false;
+    }
+
+    protected function setDiscovery($target, $discovery)
+    {
+        $this->cache->write(SELF::CACHE_KEY_DISCOVERY . $target, serialize($discovery), self::CACHE_DURATION_DISCOVERY);
+    }
+
+    protected function setupSidebar($target, $auth)
+    {
+        $targets = new ViewsWidget();
+        $targets->setTitle(_('Ziel-API'));
+        foreach ($this->targets as $key => $label) {
+            $targets->addLink($label, $this->url_for('client?target=' . $key))->setActive($target === $key);
+        }
+        Sidebar::get()->addWidget($targets);
+
+        $auths = new OptionsWidget();
+        $auths->setTitle(_('Authorisierung'));
+        foreach ($this->auth_types as $key => $label) {
+            $auths->addRadioButton($label, $this->url_for('client/' . $key, compact('target')), $auth === $key);
+        }
+        Sidebar::get()->addWidget($auths);
+
+        $actions = new ActionsWidget();
+        if ($this->getDiscovery($target)) {
+            $actions->addLink(_('Disovery aktualisieren'), $this->url_for('client/discovery/'. $auth, compact('target')), 'icons/16/blue/literature.png');
+        } else {
+            $actions->addLink(_('Disovery laden'), $this->url_for('client/discovery/'. $auth, compact('target')), 'icons/16/blue/literature.png');
+        }
+
+        if ($auth === 'oauth') {
+            if ($this->getRequestToken()) {
+                $actions->addLink(_('Request-Token anzeigen'), $this->url_for('client/token/request'), 'icons/16/blue/visibility-visible.png')->asDialog();
+                $actions->addLink(_('Request-Token löschen'), $this->url_for('client/clear_cache/request', compact('target')), 'icons/16/blue/trash.png');
+            }
+            if ($this->getAccessToken()) {
+                $actions->addLink(_('Access-Token anzeigen'), $this->url_for('client/token/access'), 'icons/16/blue/visibility-visible.png')->asDialog();
+                $actions->addLink(_('Access-Token löschen'), $this->url_for('client/clear_cache/access', compact('target')), 'icons/16/blue/trash.png');
+            }
+        }
+        Sidebar::get()->addWidget($actions);
     }
 }
