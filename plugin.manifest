@@ -1,6 +1,6 @@
 pluginname=OAuthConsumerExample
 pluginclassname=OAuthConsumerExample
 origin=UOL
-version=0.9.1
+version=1.0
 homepage=https://github.com/studip/studip-plugin-oauth-consumer-example
-studipMinVersion=3.1
+studipMinVersion=3.2
