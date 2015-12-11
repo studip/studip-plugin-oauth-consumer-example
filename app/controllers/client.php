@@ -364,7 +364,7 @@ class ClientController extends StudipController
 
     protected function getDiscovery($target)
     {
-        $cached = $this->cache->read(SELF::CACHE_KEY_DISCOVERY . $target);
+        $cached = $this->cache->read(self::CACHE_KEY_DISCOVERY . $target);
         return $cached
             ? unserialize($cached)
             : false;
@@ -372,7 +372,7 @@ class ClientController extends StudipController
 
     protected function setDiscovery($target, $discovery)
     {
-        $this->cache->write(SELF::CACHE_KEY_DISCOVERY . $target, serialize($discovery), self::CACHE_DURATION_DISCOVERY);
+        $this->cache->write(self::CACHE_KEY_DISCOVERY . $target, serialize($discovery), self::CACHE_DURATION_DISCOVERY);
     }
 
     protected function setupSidebar($target, $auth)

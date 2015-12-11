@@ -6,7 +6,7 @@ class OAuthConsumerExample extends StudIPPlugin implements SystemPlugin
         parent::__construct();
 
         $navigation = new Navigation(_('OAuth Consumer'), PluginEngine::getLink($this, array(), 'client'));
-        $navigation->setImage('header/resources.png');
+        $navigation->setImage('icons/lightblue/computer.svg');
         Navigation::addItem('/oauth_consumer', $navigation);
     }
 
